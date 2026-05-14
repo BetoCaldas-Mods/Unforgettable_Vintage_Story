@@ -102,31 +102,33 @@ namespace Unforgettable
             }
             else if (currCode.EndsWith("-partbaked"))
             {
-                // Item está na fase final de assamento (partbaked → perfect).
-                // Tentamos ler BakingProperties para calcular progresso, mas exibimos o ícone mesmo se falhar.
+                // Fase final de assamento (partbaked → perfect): calcula progresso real.
                 var bp = BakingProperties.ReadFrom(slot!.Itemstack!);
-                if (doLog) Log($"  Slot {slotIndex}: BakingProperties={bp?.ResultCode ?? "NULL"} LevelFrom={bp?.LevelFrom} LevelTo={bp?.LevelTo}");
-
                 float bakedLevel = tree.GetFloat("baked" + slotIndex);
-                float itemTemp   = tree.GetFloat("temp"  + slotIndex);
-                float browning   = ResolveOrDefault(tree.GetFloat("brown" + slotIndex), DefaultBrowningPoint);
 
-                if (doLog) Log($"  Slot {slotIndex}: bakedLevel={bakedLevel} itemTemp={itemTemp} browning={browning}");
+                if (doLog) Log($"  Slot {slotIndex}: BakingProperties={bp?.ResultCode ?? "NULL"} bakedLevel={bakedLevel} LevelFrom={bp?.LevelFrom} LevelTo={bp?.LevelTo}");
 
                 _phases[key] = SlotPhase.Baking;
+                _progress[key] = bp != null && bp.LevelTo > bp.LevelFrom
+                    ? CalculateBakingProgress(bakedLevel, bp.LevelFrom, bp.LevelTo)
+                    : 0f;
 
-                if (bp != null && bp.LevelTo > bp.LevelFrom)
-                    _progress[key] = CalculateBakingProgress(bakedLevel, bp.LevelFrom, bp.LevelTo);
-                else
-                    _progress[key] = 0f;
+                if (doLog) Log($"  Slot {slotIndex}: → Baking (final) progress={_progress[key]:F2}");
+            }
+            else if (tree.GetFloat("tbake" + slotIndex) > 0)
+            {
+                // Fase inicial de assamento (ex: pie-raw → pie-partbaked): item está no forno mas ainda não
+                // chegou na fase final. Mostra ícone estático (sem piscar) com progresso 0.
+                _phases[key] = SlotPhase.Baking;
+                _progress[key] = 0f;
 
-                if (doLog) Log($"  Slot {slotIndex}: → Baking progress={_progress[key]:F2}");
+                if (doLog) Log($"  Slot {slotIndex}: → Baking (inicial) código={currCode}");
             }
             else
             {
                 _phases[key] = SlotPhase.None;
                 _progress.Remove(key);
-                if (doLog && currCode != null) Log($"  Slot {slotIndex}: → None (código={currCode})");
+                if (doLog && currCode != null) Log($"  Slot {slotIndex}: → None (código={currCode}, sem dados de assamento)");
             }
 
             _prevCodes[key] = currCode;

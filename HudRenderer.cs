@@ -16,8 +16,8 @@ namespace Unforgettable
         private readonly ICoreClientAPI _api;
         private LoadedTexture? _iconTexture;
         private float _blinkTimer;
-        private bool _textureLoaded;
         private bool _wasActive;
+        private bool _loadAttempted;
 
         public HudRenderer(ICoreClientAPI api)
         {
@@ -68,16 +68,30 @@ namespace Unforgettable
 
         private void EnsureTextureLoaded()
         {
-            if (_textureLoaded) return;
-            _textureLoaded = true;
+            if (_iconTexture != null && _iconTexture.TextureId > 0) return;
+            if (_loadAttempted) return;
+            _loadAttempted = true;
 
-            _iconTexture = new LoadedTexture(_api);
-            _api.Render.GetOrLoadTexture(
-                new AssetLocation("unforgettable:textures/oventimer"),
-                ref _iconTexture
-            );
+            try
+            {
+                var asset = _api.Assets.TryGet(new AssetLocation("unforgettable:textures/oventimer.png"));
+                if (asset == null)
+                {
+                    _api.Logger.Error("[unforgettable] HudRenderer: asset 'unforgettable:textures/oventimer.png' não encontrado");
+                    return;
+                }
 
-            _api.Logger.Notification("[unforgettable] HudRenderer: textura carregada — TextureId={0}", _iconTexture.TextureId);
+                _iconTexture = new LoadedTexture(_api);
+                BitmapRef bmp = asset.ToBitmap(_api);
+                _api.Render.LoadTexture(bmp, ref _iconTexture);
+                bmp.Dispose();
+
+                _api.Logger.Notification("[unforgettable] HudRenderer: textura carregada — TextureId={0}", _iconTexture.TextureId);
+            }
+            catch (Exception ex)
+            {
+                _api.Logger.Error("[unforgettable] HudRenderer: erro ao carregar textura — {0}", ex.Message);
+            }
         }
 
         public void Dispose()

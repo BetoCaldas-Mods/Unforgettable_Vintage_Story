@@ -74,10 +74,10 @@ namespace Unforgettable
 
             try
             {
-                var asset = _api.Assets.TryGet(new AssetLocation("unforgettable:textures/oventimer.png"));
+                var asset = _api.Assets.TryGet(new AssetLocation("unforgettable:textures/oven_timer_inverted_transparent.png"));
                 if (asset == null)
                 {
-                    _api.Logger.Error("[unforgettable] HudRenderer: asset 'unforgettable:textures/oventimer.png' não encontrado");
+                    _api.Logger.Error("[unforgettable] HudRenderer: asset 'unforgettable:textures/oven_timer_inverted_transparent.png' não encontrado");
                     return;
                 }
 

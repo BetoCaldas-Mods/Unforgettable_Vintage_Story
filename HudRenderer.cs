@@ -6,18 +6,25 @@ namespace Unforgettable
 {
     public class HudRenderer : IRenderer, IDisposable
     {
-        private const float IconSize = 80f;
+        private const float IconSize      = 80f;
         private const float IconMarginLeft = 20f;
+        private const float IconGap        = 10f;
         private const float MaxBlinkFrequency = 2f;
 
         public double RenderOrder => 1.0;
         public int RenderRange => 0;
 
         private readonly ICoreClientAPI _api;
-        private LoadedTexture? _iconTexture;
-        private float _blinkTimer;
-        private bool _wasActive;
-        private bool _loadAttempted;
+
+        private LoadedTexture? _ovenTexture;
+        private LoadedTexture? _firepitTexture;
+        private bool _ovenLoadAttempted;
+        private bool _firepitLoadAttempted;
+
+        private float _ovenBlinkTimer;
+        private float _firepitBlinkTimer;
+        private bool _ovenWasActive;
+        private bool _firepitWasActive;
 
         public HudRenderer(ICoreClientAPI api)
         {
@@ -27,77 +34,113 @@ namespace Unforgettable
 
         public void OnRenderFrame(float deltaTime, EnumRenderStage stage)
         {
-            EnsureTextureLoaded();
+            EnsureOvenTextureLoaded();
+            EnsureFirepitTextureLoaded();
 
-            var state = AlarmSystem.Instance?.HudState;
+            RenderIcon(
+                deltaTime,
+                AlarmSystem.Instance?.HudState,
+                _ovenTexture,
+                ref _ovenBlinkTimer,
+                ref _ovenWasActive,
+                iconIndex: 0
+            );
+
+            RenderIcon(
+                deltaTime,
+                FirepitAlarmSystem.Instance?.HudState,
+                _firepitTexture,
+                ref _firepitBlinkTimer,
+                ref _firepitWasActive,
+                iconIndex: 1
+            );
+        }
+
+        private void RenderIcon(
+            float deltaTime,
+            HudState? state,
+            LoadedTexture? texture,
+            ref float blinkTimer,
+            ref bool wasActive,
+            int iconIndex)
+        {
             bool isActive = state != null && state.IsActive;
 
-            if (!_wasActive && isActive)
-            {
-                _blinkTimer = 0f;
-                _api.Logger.Notification("[unforgettable] HudRenderer: estado ativo, iniciando renderização do ícone");
-            }
-            _wasActive = isActive;
+            if (!wasActive && isActive)
+                blinkTimer = 0f;
+            wasActive = isActive;
 
             if (!isActive) return;
 
-            if (_iconTexture == null || _iconTexture.TextureId <= 0)
-            {
-                _api.Logger.Warning("[unforgettable] HudRenderer: textura inválida (TextureId={0})", _iconTexture?.TextureId ?? -1);
-                return;
-            }
+            if (texture == null || texture.TextureId <= 0) return;
 
-            _blinkTimer += deltaTime;
+            blinkTimer += deltaTime;
 
-            if (!IsIconVisible(state!)) return;
+            if (!IsIconVisible(state!, blinkTimer)) return;
 
             float x = IconMarginLeft;
-            float y = (_api.Render.FrameHeight - IconSize) / 2f;
+            float totalHeight = (_api.Render.FrameHeight - IconSize) / 2f;
+            float y = totalHeight + iconIndex * (IconSize + IconGap);
 
-            _api.Render.Render2DTexture(_iconTexture.TextureId, x, y, IconSize, IconSize, 50f);
+            _api.Render.Render2DTexture(texture.TextureId, x, y, IconSize, IconSize, 50f);
         }
 
-        private bool IsIconVisible(HudState state)
+        private static bool IsIconVisible(HudState state, float timer)
         {
             float frequency = state.IsDone ? MaxBlinkFrequency : state.Progress * MaxBlinkFrequency;
             if (frequency < 0.05f) return true;
 
             float halfPeriod = 0.5f / frequency;
-            return (_blinkTimer % (halfPeriod * 2f)) < halfPeriod;
+            return (timer % (halfPeriod * 2f)) < halfPeriod;
         }
 
-        private void EnsureTextureLoaded()
+        private void EnsureOvenTextureLoaded()
         {
-            if (_iconTexture != null && _iconTexture.TextureId > 0) return;
-            if (_loadAttempted) return;
-            _loadAttempted = true;
+            if (_ovenTexture != null && _ovenTexture.TextureId > 0) return;
+            if (_ovenLoadAttempted) return;
+            _ovenLoadAttempted = true;
+            _ovenTexture = LoadTexture("unforgettable:textures/oventimer.png");
+        }
 
+        private void EnsureFirepitTextureLoaded()
+        {
+            if (_firepitTexture != null && _firepitTexture.TextureId > 0) return;
+            if (_firepitLoadAttempted) return;
+            _firepitLoadAttempted = true;
+            _firepitTexture = LoadTexture("unforgettable:textures/cooking_pot_timer_inverted_transparent.png");
+        }
+
+        private LoadedTexture? LoadTexture(string assetPath)
+        {
             try
             {
-                var asset = _api.Assets.TryGet(new AssetLocation("unforgettable:textures/oven_timer_inverted_transparent.png"));
+                var asset = _api.Assets.TryGet(new AssetLocation(assetPath));
                 if (asset == null)
                 {
-                    _api.Logger.Error("[unforgettable] HudRenderer: asset 'unforgettable:textures/oven_timer_inverted_transparent.png' não encontrado");
-                    return;
+                    _api.Logger.Error("[unforgettable] HudRenderer: asset '{0}' não encontrado", assetPath);
+                    return null;
                 }
 
-                _iconTexture = new LoadedTexture(_api);
+                var texture = new LoadedTexture(_api);
                 BitmapRef bmp = asset.ToBitmap(_api);
-                _api.Render.LoadTexture(bmp, ref _iconTexture);
+                _api.Render.LoadTexture(bmp, ref texture);
                 bmp.Dispose();
 
-                _api.Logger.Notification("[unforgettable] HudRenderer: textura carregada — TextureId={0}", _iconTexture.TextureId);
+                _api.Logger.Notification("[unforgettable] HudRenderer: '{0}' carregada — TextureId={1}", assetPath, texture.TextureId);
+                return texture;
             }
             catch (Exception ex)
             {
-                _api.Logger.Error("[unforgettable] HudRenderer: erro ao carregar textura — {0}", ex.Message);
+                _api.Logger.Error("[unforgettable] HudRenderer: erro ao carregar '{0}' — {1}", assetPath, ex.Message);
+                return null;
             }
         }
 
         public void Dispose()
         {
             _api.Event.UnregisterRenderer(this, EnumRenderStage.Ortho);
-            _iconTexture?.Dispose();
+            _ovenTexture?.Dispose();
+            _firepitTexture?.Dispose();
         }
     }
 }

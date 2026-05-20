@@ -9,6 +9,7 @@ namespace Unforgettable
         private const string HarmonyId = "unforgettable";
 
         private AlarmSystem? _alarmSystem;
+        private FirepitAlarmSystem? _firepitAlarmSystem;
         private HudRenderer? _hudRenderer;
         private Harmony? _harmony;
 
@@ -23,6 +24,9 @@ namespace Unforgettable
             _alarmSystem = new AlarmSystem(api);
             AlarmSystem.Instance = _alarmSystem;
 
+            _firepitAlarmSystem = new FirepitAlarmSystem(api);
+            FirepitAlarmSystem.Instance = _firepitAlarmSystem;
+
             _hudRenderer = new HudRenderer(api);
 
             api.Logger.Notification("[unforgettable] Unforgettable started");
@@ -32,6 +36,7 @@ namespace Unforgettable
         {
             _hudRenderer?.Dispose();
             _alarmSystem?.Dispose();
+            _firepitAlarmSystem?.Dispose();
             _harmony?.UnpatchAll(HarmonyId);
             base.Dispose();
         }

@@ -5,6 +5,7 @@
     "version": "1.0.0",
     "authors": ["Mintir4"],
     "description": "Shows a HUD icon and plays an alarm when bread or pie is perfectly baked in the clay oven",
+    "iconPath": "modicon.png",
     "side": "Client",
     "dependencies": {
         "game": "1.22.2"

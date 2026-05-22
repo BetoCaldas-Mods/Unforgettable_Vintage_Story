@@ -11,10 +11,12 @@ Mod cliente para Vintage Story 1.22+ que exibe um ícone animado na HUD e toca u
 
 ## Itens monitorados
 
-| Item | Estágio anterior | Estágio detectado |
-|------|-----------------|-------------------|
-| Pão (qualquer grão) | `bread-*-partbaked` | `bread-*-perfect` ✅ |
-| Torta (qualquer recheio) | `pie-partbaked` | `pie-perfect` ✅ |
+
+| Item                     | Estágio anterior    | Estágio detectado   |
+| ------------------------ | ------------------- | ------------------- |
+| Pão (qualquer grão)      | `bread-*-partbaked` | `bread-*-perfect` ✅ |
+| Torta (qualquer recheio) | `pie-partbaked`     | `pie-perfect` ✅     |
+
 
 ## Estrutura do projeto
 
@@ -40,12 +42,13 @@ Unforgettable/
 2. Crie um zip com: `modinfo.json`, `Unforgettable.dll` e a pasta `assets/`.
 3. Coloque o zip em `%appdata%\VintagestoryData\Mods\`.
 
-## Arquivo de som
+## Créditos
 
-O arquivo `assets/unforgettable/sounds/oventialarm.ogg` foi gerado a partir de:
-`484718__ccr_fs__oven-timer-complete.mp3` (FreeSound)
+- **Código:** desenvolvido com [Cursor Composable](https://cursor.com)
+- **Imagens** (ícones HUD e `modicon.png`): geradas com Gemini Nano Banana
+- **Som do forno/panela** (`oventialarm.ogg`): adaptado de [484718__ccr_fs__oven-timer-complete](https://freesound.org/) (FreeSound)
 
-Para substituir o som, converta qualquer MP3 para OGG e renomeie para `oventialarm.ogg`.
+Para substituir o som do forno, converta qualquer MP3 para OGG e renomeie para `oventialarm.ogg`.
 
 ## Empacotamento
 
@@ -65,3 +68,4 @@ Compress-Archive -Path "$out\*" -DestinationPath $zipName -Force
 
 Copy-Item $zipName "$env:APPDATA\VintagestoryData\Mods\$zipName" -Force
 ```
+

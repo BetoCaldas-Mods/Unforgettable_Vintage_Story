@@ -18,13 +18,17 @@ namespace Unforgettable
 
         private LoadedTexture? _ovenTexture;
         private LoadedTexture? _firepitTexture;
+        private LoadedTexture? _crucibleTexture;
         private bool _ovenLoadAttempted;
         private bool _firepitLoadAttempted;
+        private bool _crucibleLoadAttempted;
 
         private float _ovenBlinkTimer;
         private float _firepitBlinkTimer;
+        private float _crucibleBlinkTimer;
         private bool _ovenWasActive;
         private bool _firepitWasActive;
+        private bool _crucibleWasActive;
 
         public HudRenderer(ICoreClientAPI api)
         {
@@ -36,6 +40,7 @@ namespace Unforgettable
         {
             EnsureOvenTextureLoaded();
             EnsureFirepitTextureLoaded();
+            EnsureCrucibleTextureLoaded();
 
             RenderIcon(
                 deltaTime,
@@ -53,6 +58,15 @@ namespace Unforgettable
                 ref _firepitBlinkTimer,
                 ref _firepitWasActive,
                 iconIndex: 1
+            );
+
+            RenderIcon(
+                deltaTime,
+                CrucibleAlarmSystem.Instance?.HudState,
+                _crucibleTexture,
+                ref _crucibleBlinkTimer,
+                ref _crucibleWasActive,
+                iconIndex: 2
             );
         }
 
@@ -110,6 +124,14 @@ namespace Unforgettable
             _firepitTexture = LoadTexture("unforgettable:textures/cooking_pot_timer_inverted_transparent.png");
         }
 
+        private void EnsureCrucibleTextureLoaded()
+        {
+            if (_crucibleTexture != null && _crucibleTexture.TextureId > 0) return;
+            if (_crucibleLoadAttempted) return;
+            _crucibleLoadAttempted = true;
+            _crucibleTexture = LoadTexture("unforgettable:textures/crucible_timer_inverted_transparent.png");
+        }
+
         private LoadedTexture? LoadTexture(string assetPath)
         {
             try
@@ -141,6 +163,7 @@ namespace Unforgettable
             _api.Event.UnregisterRenderer(this, EnumRenderStage.Ortho);
             _ovenTexture?.Dispose();
             _firepitTexture?.Dispose();
+            _crucibleTexture?.Dispose();
         }
     }
 }

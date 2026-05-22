@@ -12,6 +12,7 @@ namespace Unforgettable
         {
             if (worldForResolving.Side != EnumAppSide.Client) return;
             FirepitAlarmSystem.Instance?.OnFirepitSynced(__instance, tree);
+            CrucibleAlarmSystem.Instance?.OnFirepitSynced(__instance, tree);
         }
     }
 }

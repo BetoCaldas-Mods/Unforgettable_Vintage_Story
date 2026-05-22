@@ -10,6 +10,7 @@ namespace Unforgettable
 
         private AlarmSystem? _alarmSystem;
         private FirepitAlarmSystem? _firepitAlarmSystem;
+        private CrucibleAlarmSystem? _crucibleAlarmSystem;
         private HudRenderer? _hudRenderer;
         private Harmony? _harmony;
 
@@ -27,6 +28,9 @@ namespace Unforgettable
             _firepitAlarmSystem = new FirepitAlarmSystem(api);
             FirepitAlarmSystem.Instance = _firepitAlarmSystem;
 
+            _crucibleAlarmSystem = new CrucibleAlarmSystem(api);
+            CrucibleAlarmSystem.Instance = _crucibleAlarmSystem;
+
             _hudRenderer = new HudRenderer(api);
 
             api.Logger.Notification("[unforgettable] Unforgettable started");
@@ -37,6 +41,7 @@ namespace Unforgettable
             _hudRenderer?.Dispose();
             _alarmSystem?.Dispose();
             _firepitAlarmSystem?.Dispose();
+            _crucibleAlarmSystem?.Dispose();
             _harmony?.UnpatchAll(HarmonyId);
             base.Dispose();
         }

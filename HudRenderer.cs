@@ -113,7 +113,7 @@ namespace Unforgettable
             if (_ovenTexture != null && _ovenTexture.TextureId > 0) return;
             if (_ovenLoadAttempted) return;
             _ovenLoadAttempted = true;
-            _ovenTexture = LoadTexture("unforgettable:textures/oventimer.png");
+            _ovenTexture = LoadTexture("unforgettable:textures/oven_timer_inverted_transparent.png");
         }
 
         private void EnsureFirepitTextureLoaded()

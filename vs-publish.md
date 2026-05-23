@@ -1,196 +1,135 @@
-# Publicação no Vintage Story Mod DB — Unforgettable
+# Publicação no Mod DB — Unforgettable
 
-Documentação da consulta sobre preenchimento da página do mod no [Vintage Story Mod Database](https://mods.vintagestory.at/).
-
-- **Página do mod:** [https://mods.vintagestory.at/show/mod/50588](https://mods.vintagestory.at/show/mod/50588)  
-- **Formulário de edição:** [https://mods.vintagestory.at/edit/mod/?assetid=50588](https://mods.vintagestory.at/edit/mod/?assetid=50588)  
-- **Referências:** [Category:Modding](https://wiki.vintagestory.at/Category:Modding), [Modding:Modinfo](https://wiki.vintagestory.at/Modding:Modinfo), [Modding:Mod Packaging](https://wiki.vintagestory.at/Modding:Mod_Packaging)
+- **Página:** [https://mods.vintagestory.at/show/mod/50588](https://mods.vintagestory.at/show/mod/50588)  
+- **Edição:** [https://mods.vintagestory.at/edit/mod/?assetid=50588](https://mods.vintagestory.at/edit/mod/?assetid=50588)
 
 ---
 
-## Pergunta
-
-> Consultando a documentação de MOD do jogo Vintage Story ([https://wiki.vintagestory.at/Category:Modding](https://wiki.vintagestory.at/Category:Modding)), me ajude a preencher as informações faltantes na página desse MOD ([https://mods.vintagestory.at/edit/mod/?assetid=50588](https://mods.vintagestory.at/edit/mod/?assetid=50588)).
-
----
-
-## Resposta
-
-### Estado atual da página
+## Campos do formulário
 
 
-| Campo     | Situação                                     |
-| --------- | -------------------------------------------- |
-| Nome      | `Unforgettable` — OK                         |
-| Status    | **Draft** — precisa mudar para **Published** |
-| Releases  | **Nenhum** — falta enviar o `.zip`           |
-| Descrição | Vazia na página pública                      |
-| Tags      | Provavelmente vazias                         |
-
-
-O `modinfo.json` ainda descreve apenas o forno de barro; o mod já cobre **forno de barro**, **panela no fogão** e **cadinho no fogão**.
-
----
-
-### Metadados básicos (formulário de edição)
-
-
-| Campo                         | Valor sugerido  |
-| ----------------------------- | --------------- |
-| **Mod ID**                    | `unforgettable` |
-| **Name**                      | `Unforgettable` |
-| **Type**                      | `Code`          |
-| **Side**                      | `Client`        |
-| **Authors**                   | `Mintir4`       |
-| **Game version** (no release) | `1.22.2`        |
-| **Mod version** (no release)  | `1.0.0`         |
+| Campo   | Valor                      |
+| ------- | -------------------------- |
+| Mod ID  | `unforgettable`            |
+| Name    | `Unforgettable`            |
+| Type    | Code                       |
+| Side    | Client                     |
+| Authors | `Mintir4`                  |
+| Release | mod `1.0.0`, game `1.22.2` |
 
 
 ---
 
-### Summary (texto curto da listagem)
+### Summary
 
 ```
-Client-side QoL mod: HUD timer icons and repeating alarms when clay oven baking, firepit cooking pots, or crucibles finish.
+Client-side HUD timers and alarms for clay oven, firepit pot, and crucible — client-side QoL
 ```
 
 ---
 
-### Description (aba Description — Markdown)
+### Text (descrição longa)
 
-```markdown
-## Unforgettable
+Campo **Text** = HTML via TinyMCE (**Tools → Source code**). Não usar Markdown nem `<table>`.
 
-Never miss the perfect moment again. **Unforgettable** is a lightweight **client-side** code mod that watches your cooking and smelting stations and alerts you when food or metal is ready — before it burns or sits forgotten.
+```html
+<h2>Unforgettable</h2>
 
-### Features
+<p>Never miss the perfect moment again. <strong>Unforgettable</strong> is a lightweight <strong>client-side</strong> code mod that watches your cooking and smelting stations and alerts you when food or metal is ready — before it burns or sits forgotten.</p>
 
-- **HUD timer icons** on the left side of the screen while something is in progress
-- **Blink speed increases** with progress (0×/s up to 2×/s)
-- **Repeating alarm sound** every 5 seconds when cooking/smelting is complete
-- Alarm and icon **stop automatically** when you remove the finished item
-- **Progress is preserved** if the fire goes out mid-cook (icon stays visible)
+<h3>Features</h3>
+<ul>
+<li><strong>HUD timer icons</strong> on the left side of the screen while something is in progress</li>
+<li><strong>Blink speed increases</strong> with progress (0×/s up to 2×/s)</li>
+<li><strong>Repeating alarm sound</strong> every 5 seconds when cooking/smelting is complete</li>
+<li>Alarm and icon <strong>stop automatically</strong> when you remove the finished item</li>
+<li><strong>Progress is preserved</strong> if the fire goes out mid-cook (icon stays visible)</li>
+</ul>
 
-### Supported stations
+<h3>Supported stations</h3>
+<ul>
+<li><strong>Clay oven</strong> — bread and pie reaching <code>-perfect</code> from <code>-partbaked</code>. HUD icon: oven timer.</li>
+<li><strong>Firepit + cooking pot</strong> — meals and <code>CooksInto</code> recipes (e.g. rendered fat). HUD icon: cooking pot timer.</li>
+<li><strong>Firepit + crucible</strong> — ore smelting in a crucible. HUD icon: crucible timer.</li>
+</ul>
 
-| Station | What is tracked | HUD icon |
-|---------|-----------------|----------|
-| **Clay oven** | Bread and pie reaching `-perfect` from `-partbaked` | Oven timer |
-| **Firepit + cooking pot** | Meals and `CooksInto` recipes (e.g. rendered fat) | Cooking pot timer |
-| **Firepit + crucible** | Ore smelting in a crucible | Crucible timer |
+<h3>How it works</h3>
+<p>Harmony patches intercept client-side sync updates from <code>BlockEntityOven</code> and <code>BlockEntityFirepit</code>. No server install required — works on any world where you have the mod locally.</p>
 
-### How it works
+<h3>Requirements</h3>
+<ul>
+<li><strong>Vintage Story 1.22.2+</strong></li>
+<li><strong>Client only</strong> — no server-side component needed</li>
+</ul>
 
-Harmony patches intercept client-side sync updates from `BlockEntityOven` and `BlockEntityFirepit`. No server install required — works on any world where you have the mod locally.
-
-### Requirements
-
-- **Vintage Story 1.22.2+**
-- **Client only** — no server-side component needed
-- Depends on vanilla `game` 1.22.2
-
-### Credits
-
-- **Code** developed with [Cursor Composable](https://cursor.com)
-- **Images** (HUD timer icons and mod icon): generated with Gemini nanobana
-- **Oven/firepit alarm sound** (`oventialarm.ogg`): adapted from a sample on [FreeSound](https://freesound.org/)
+<h3>Credits</h3>
+<ul>
+<li><strong>Code</strong> developed with <a href="https://cursor.com">Cursor</a></li>
+<li><strong>Images</strong> generated with <a href="https://gemini.google.com/">Gemini</a></li>
+<li><strong>Sounds</strong> adapted from a sample on <a href="https://freesound.org/">FreeSound</a></li>
+</ul>
 ```
 
 ---
 
-### Tags sugeridas
+### Tags
 
-Marcar no Mod DB:
-
-- **QoL**
-- **HUD**
-- **UI**
-- **Food**
-- **Oven**
-- **Firepit**
-- **Sound**
-- **Client**
-- **Code**
-
-Opcionais: **Utility**, **Tweak**, **Crafting**
+QoL, HUD, UI, Food, Oven, Firepit, Sound, Client, Code — opcional: Utility, Tweak, Crafting
 
 ---
 
-### Logo / modicon
+### Imagens
 
-Não há `modicon.png` no projeto. Segundo a [wiki de empacotamento](https://wiki.vintagestory.at/Modding:Mod_Packaging), o jogo usa `modicon.png` na raiz do zip.
 
-**Sugestão:** usar `assets/unforgettable/textures/oven_timer_inverted_transparent.png` como base, redimensionar para ~256×256 e enviar como logo no Mod DB **e** incluir `modicon.png` na raiz do zip.
+| Uso                       | Tamanho            | Onde                                                           |
+| ------------------------- | ------------------ | -------------------------------------------------------------- |
+| **modicon.png** (in-game) | 256×256            | Raiz do zip                                                    |
+| **ModDB Logo**            | 480×480 ou 480×320 | Upload em **Screenshots** → selecionar em **ModDB Logo image** |
+| **External Logo**         | —                  | Deixar *Default (crop ModDB image)* se o logo for 480×480      |
+
+
+Arquivo pronto para o Mod DB: `modicon-resize480x480.png` (redimensionado de `modicon.png`).
+
+**Card Preview** e **External Preview** atualizam sozinhos a partir de **Name**, **Summary** e logo selecionado.
 
 ---
 
-### Release (aba Files)
+### Release
 
-1. Compilar e empacotar o mod (estrutura conforme [Modding:Mod Packaging](https://wiki.vintagestory.at/Modding:Mod_Packaging)):
+Zip `Unforgettable-mv_1.0.0-gv_1.22.2.zip`:
 
 ```
-Unforgettable-mv_1.0.0-gv_1.22.2.zip
-├── modinfo.json
-├── modicon.png          ← recomendado
-├── Unforgettable.dll
-└── assets/
-    └── unforgettable/
-        ├── sounds/
-        │   ├── oventialarm.ogg
-        │   └── crucible_sound.wav
-        └── textures/
-            ├── oven_timer_inverted_transparent.png
-            ├── cooking_pot_timer_inverted_transparent.png
-            └── crucible_timer_inverted_transparent.png
+modinfo.json
+modicon.png
+Unforgettable.dll
+assets/unforgettable/...
 ```
 
-1. Fazer upload na aba **Files**
-2. **Mod version:** `1.0.0`
-3. **Game version:** `1.22.2`
+- **Mod version:** 1.0.0  
+- **Game version:** 1.22.2
 
-**Changelog sugerido para 1.0.0:**
+**Changelog:**
 
-```markdown
-Initial release.
-
-- Clay oven alarm for bread and pie (perfect bake detection)
-- Firepit cooking pot timer and alarm (meals and CooksInto recipes)
-- Crucible smelting timer and alarm
-- HUD icons with progress-based blinking
-- Repeating alarm every 5 seconds until item is removed
+```
+Initial release — clay oven, firepit cooking pot, and crucible HUD timers with repeating alarms.
 ```
 
 ---
 
-### Publicar
-
-No formulário de edição, mudar de **Draft** para **Published**. Rascunhos só aparecem por link direto.
-
----
-
-### Atualizar também o `modinfo.json`
-
-A descrição in-game ainda está desatualizada. Sugestão:
+### modinfo.json
 
 ```json
-"description": "Client-side HUD timers and repeating alarms for clay oven baking, firepit cooking pots, and crucible smelting"
-```
-
-Campos opcionais úteis ([Modding:Modinfo](https://wiki.vintagestory.at/Modding:Modinfo)):
-
-```json
+"description": "Client-side HUD timers and repeating alarms for clay oven baking, firepit cooking pots, and crucible smelting",
 "website": "https://mods.vintagestory.at/show/mod/50588",
 "iconPath": "modicon.png"
 ```
 
 ---
 
-### Checklist final
+### Publicar
 
-1. Preencher **Summary** e **Description**
-2. Adicionar **tags**
-3. Enviar **logo**
-4. Fazer upload do **release 1.0.0** para game **1.22.2**
-5. Mudar status para **Published**
-6. Atualizar `modinfo.json` para bater com a página
+1. Preencher **Summary** e **Text** (HTML, Source code do TinyMCE)
+2. Tags, logo 480×480 em Screenshots, selecionar **ModDB Logo**
+3. Upload do release 1.0.0 / game 1.22.2
+4. Status **Draft** → **Published**
 

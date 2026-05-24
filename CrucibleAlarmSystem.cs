@@ -16,19 +16,21 @@ namespace Unforgettable
         private const float CompletionThresholdFraction = 0.88f;
 
         public static CrucibleAlarmSystem? Instance;
-        public HudState HudState { get; } = new();
+        public IReadOnlyDictionary<string, HudState> HudStates => _hudStates;
 
         private readonly ICoreClientAPI _api;
+        private readonly Dictionary<string, HudState> _hudStates = new();
         private readonly Dictionary<string, SlotPhase> _phases = new();
         private readonly Dictionary<string, float> _progress = new();
         private readonly Dictionary<string, float> _prevOreTimes = new();
         private readonly Dictionary<string, float> _prevMaxTimes = new();
-        private long _repeatingAlarmHandle = -1;
+        private readonly StationAlarmQueue _alarmQueue;
         private int _syncCount;
 
         public CrucibleAlarmSystem(ICoreClientAPI api)
         {
             _api = api;
+            _alarmQueue = new StationAlarmQueue(api, AlarmSound, RepeatingAlarmIntervalMs);
         }
 
         public void OnFirepitSynced(BlockEntityFirepit firepit, ITreeAttribute tree)
@@ -38,6 +40,7 @@ namespace Unforgettable
             _syncCount++;
             bool doLog = _syncCount <= 10 || _syncCount % 30 == 0;
             string key = PosKey(firepit.Pos);
+            SlotPhase oldPhase = _phases.GetValueOrDefault(key);
 
             bool hasCrucibleInput = IsSmeltingContainerInInput(firepit);
             bool hasSmeltedOutput = IsSmeltedContainerInOutput(firepit);
@@ -56,9 +59,8 @@ namespace Unforgettable
             _prevOreTimes.TryGetValue(key, out float prevOreTime);
             _prevMaxTimes.TryGetValue(key, out float prevMaxTime);
 
-            bool wasAlreadyDone = _phases.GetValueOrDefault(key) == SlotPhase.Done;
-            bool wasBaking = _phases.GetValueOrDefault(key) == SlotPhase.Baking;
-            bool wasAnyDone = wasAlreadyDone;
+            bool wasAlreadyDone = oldPhase == SlotPhase.Done;
+            bool wasBaking = oldPhase == SlotPhase.Baking;
 
             bool justSmelted = prevMaxTime > 0.01f
                 && prevOreTime >= prevMaxTime * CompletionThresholdFraction
@@ -67,19 +69,14 @@ namespace Unforgettable
                 && (hasCrucibleInput || wasBaking);
 
             if (doLog)
-                Log($"[Sync #{_syncCount}] Cadinho {firepit.Pos} — oreTime={currOreTime:F1}/{maxTime:F1} fireLit={fireLit} inCrucible={hasCrucibleInput} outSmelted={hasSmeltedOutput} ingredients={hasIngredients} phase={_phases.GetValueOrDefault(key)}");
+                Log($"[Sync #{_syncCount}] Cadinho {firepit.Pos} — oreTime={currOreTime:F1}/{maxTime:F1} fireLit={fireLit} inCrucible={hasCrucibleInput} outSmelted={hasSmeltedOutput} ingredients={hasIngredients} phase={oldPhase}");
 
             ApplyPhase(key, hasCrucibleInput, hasSmeltedOutput, hasIngredients, fireLit,
                 currOreTime, maxTime, wasAlreadyDone, wasBaking, justSmelted, doLog);
 
             _prevOreTimes[key] = currOreTime;
             _prevMaxTimes[key] = maxTime;
-
-            bool isNowDone = _phases.GetValueOrDefault(key) == SlotPhase.Done;
-            if (!wasAnyDone && isNowDone) StartRepeatingAlarm();
-            else if (wasAnyDone && !isNowDone) StopRepeatingAlarmIfNoCrucibleDone();
-
-            RefreshHudState();
+            FinishCrucibleSync(key, oldPhase);
         }
 
         private void ApplyPhase(
@@ -146,19 +143,22 @@ namespace Unforgettable
 
         private void IgnoreCrucibleFirepit(string key, bool doLog)
         {
-            bool wasDone = _phases.GetValueOrDefault(key) == SlotPhase.Done;
+            SlotPhase oldPhase = _phases.GetValueOrDefault(key);
             bool hadState = _phases.ContainsKey(key) && _phases[key] != SlotPhase.None
                 || _progress.ContainsKey(key);
 
             ClearCrucibleSlot(key);
-
-            if (wasDone)
-                StopRepeatingAlarmIfNoCrucibleDone();
+            FinishCrucibleSync(key, oldPhase);
 
             if (doLog && hadState)
                 Log($"Fogão {key}: cadinho ignorado (panela ou vazio)");
+        }
 
-            RefreshHudState();
+        private void FinishCrucibleSync(string key, SlotPhase oldPhase)
+        {
+            SlotPhase newPhase = _phases.GetValueOrDefault(key);
+            StationHudSync.NotifyPhaseChange(_alarmQueue, oldPhase, newPhase, key);
+            StationHudSync.Refresh(_hudStates, _phases, _progress);
         }
 
         private static bool IsSmeltingContainerInInput(BlockEntityFirepit firepit) =>
@@ -174,50 +174,6 @@ namespace Unforgettable
             return input is BlockCookingContainer or BlockCookedContainer;
         }
 
-        private void StopRepeatingAlarmIfNoCrucibleDone()
-        {
-            if (!_phases.Values.Any(p => p == SlotPhase.Done))
-                StopRepeatingAlarm();
-        }
-
-        private void RefreshHudState()
-        {
-            bool anyBaking = _phases.Values.Any(p => p == SlotPhase.Baking);
-            bool anyDone = _phases.Values.Any(p => p == SlotPhase.Done);
-
-            bool wasActive = HudState.IsActive;
-            HudState.IsActive = anyBaking || anyDone;
-            HudState.IsDone = anyDone;
-            HudState.Progress = anyBaking
-                ? _progress.Values.DefaultIfEmpty(0f).Max()
-                : 0f;
-
-            if (!wasActive && HudState.IsActive) Log("HudState (cadinho) ficou ATIVO");
-            else if (wasActive && !HudState.IsActive) Log("HudState (cadinho) ficou INATIVO");
-        }
-
-        private void StartRepeatingAlarm()
-        {
-            Log("Alarme de cadinho INICIADO");
-            PlayAlarm();
-            _repeatingAlarmHandle = _api.Event.RegisterGameTickListener(_ => PlayAlarm(), RepeatingAlarmIntervalMs);
-        }
-
-        private void StopRepeatingAlarm()
-        {
-            if (_repeatingAlarmHandle < 0) return;
-            Log("Alarme de cadinho PARADO");
-            _api.Event.UnregisterGameTickListener(_repeatingAlarmHandle);
-            _repeatingAlarmHandle = -1;
-        }
-
-        private void PlayAlarm()
-        {
-            var entity = _api.World.Player?.Entity;
-            if (entity == null) return;
-            _api.World.PlaySoundAt(new AssetLocation(AlarmSound), entity, null, false, 8f, 1f);
-        }
-
         private void Log(string msg) =>
             _api.Logger.Notification("[unforgettable] " + msg);
 
@@ -226,7 +182,8 @@ namespace Unforgettable
 
         public void Dispose()
         {
-            StopRepeatingAlarm();
+            _alarmQueue.Dispose();
+            _hudStates.Clear();
             _phases.Clear();
             _progress.Clear();
             _prevOreTimes.Clear();

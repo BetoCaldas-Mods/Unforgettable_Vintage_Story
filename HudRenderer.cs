@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using Vintagestory.API.Client;
 using Vintagestory.API.Common;
 
@@ -6,9 +8,11 @@ namespace Unforgettable
 {
     public class HudRenderer : IRenderer, IDisposable
     {
-        private const float IconSize      = 80f;
+        private const float IconSize = 80f;
         private const float IconMarginLeft = 20f;
-        private const float IconGap        = 10f;
+        private const float IconMarginTop = 20f;
+        private const float IconGap = 10f;
+        private const float BandGap = 10f;
         private const float MaxBlinkFrequency = 2f;
 
         public double RenderOrder => 1.0;
@@ -23,12 +27,12 @@ namespace Unforgettable
         private bool _firepitLoadAttempted;
         private bool _crucibleLoadAttempted;
 
-        private float _ovenBlinkTimer;
-        private float _firepitBlinkTimer;
-        private float _crucibleBlinkTimer;
-        private bool _ovenWasActive;
-        private bool _firepitWasActive;
-        private bool _crucibleWasActive;
+        private readonly Dictionary<string, float> _ovenBlinkTimers = new();
+        private readonly Dictionary<string, float> _firepitBlinkTimers = new();
+        private readonly Dictionary<string, float> _crucibleBlinkTimers = new();
+        private readonly Dictionary<string, bool> _ovenWasActive = new();
+        private readonly Dictionary<string, bool> _firepitWasActive = new();
+        private readonly Dictionary<string, bool> _crucibleWasActive = new();
 
         public HudRenderer(ICoreClientAPI api)
         {
@@ -42,59 +46,101 @@ namespace Unforgettable
             EnsureFirepitTextureLoaded();
             EnsureCrucibleTextureLoaded();
 
-            RenderIcon(
+            float ovenY = IconMarginTop;
+            RenderBand(
                 deltaTime,
-                AlarmSystem.Instance?.HudState,
+                AlarmSystem.Instance?.HudStates,
                 _ovenTexture,
-                ref _ovenBlinkTimer,
-                ref _ovenWasActive,
-                iconIndex: 0
-            );
+                _ovenBlinkTimers,
+                _ovenWasActive,
+                ovenY);
 
-            RenderIcon(
+            float potBandY = ovenY + IconSize + BandGap;
+            RenderBand(
                 deltaTime,
-                FirepitAlarmSystem.Instance?.HudState,
+                FirepitAlarmSystem.Instance?.HudStates,
                 _firepitTexture,
-                ref _firepitBlinkTimer,
-                ref _firepitWasActive,
-                iconIndex: 1
-            );
+                _firepitBlinkTimers,
+                _firepitWasActive,
+                potBandY);
 
-            RenderIcon(
+            float crucibleBandY = potBandY + IconSize + BandGap;
+            RenderBand(
                 deltaTime,
-                CrucibleAlarmSystem.Instance?.HudState,
+                CrucibleAlarmSystem.Instance?.HudStates,
                 _crucibleTexture,
-                ref _crucibleBlinkTimer,
-                ref _crucibleWasActive,
-                iconIndex: 2
-            );
+                _crucibleBlinkTimers,
+                _crucibleWasActive,
+                crucibleBandY);
         }
 
-        private void RenderIcon(
+        private void RenderBand(
             float deltaTime,
-            HudState? state,
+            IReadOnlyDictionary<string, HudState>? states,
             LoadedTexture? texture,
-            ref float blinkTimer,
-            ref bool wasActive,
-            int iconIndex)
+            Dictionary<string, float> blinkTimers,
+            Dictionary<string, bool> wasActive,
+            float y)
         {
-            bool isActive = state != null && state.IsActive;
-
-            if (!wasActive && isActive)
-                blinkTimer = 0f;
-            wasActive = isActive;
-
-            if (!isActive) return;
+            if (states == null || states.Count == 0)
+            {
+                blinkTimers.Clear();
+                wasActive.Clear();
+                return;
+            }
 
             if (texture == null || texture.TextureId <= 0) return;
 
+            var active = states
+                .Where(kv => kv.Value.IsActive)
+                .OrderBy(kv => kv.Key)
+                .ToList();
+
+            var activeKeys = new HashSet<string>(active.Select(kv => kv.Key));
+            foreach (string key in blinkTimers.Keys.ToList())
+            {
+                if (!activeKeys.Contains(key))
+                {
+                    blinkTimers.Remove(key);
+                    wasActive.Remove(key);
+                }
+            }
+
+            for (int i = 0; i < active.Count; i++)
+            {
+                string key = active[i].Key;
+                HudState state = active[i].Value;
+                float x = IconMarginLeft + i * (IconSize + IconGap);
+                RenderStationIcon(deltaTime, state, texture, key, x, y, blinkTimers, wasActive);
+            }
+        }
+
+        private void RenderStationIcon(
+            float deltaTime,
+            HudState state,
+            LoadedTexture texture,
+            string key,
+            float x,
+            float y,
+            Dictionary<string, float> blinkTimers,
+            Dictionary<string, bool> wasActive)
+        {
+            bool isActive = state.IsActive;
+            wasActive.TryGetValue(key, out bool prevActive);
+
+            if (!prevActive && isActive)
+                blinkTimers[key] = 0f;
+            wasActive[key] = isActive;
+
+            if (!isActive) return;
+
+            if (!blinkTimers.TryGetValue(key, out float blinkTimer))
+                blinkTimer = blinkTimers[key] = 0f;
+
             blinkTimer += deltaTime;
+            blinkTimers[key] = blinkTimer;
 
-            if (!IsIconVisible(state!, blinkTimer)) return;
-
-            float x = IconMarginLeft;
-            float totalHeight = (_api.Render.FrameHeight - IconSize) / 2f;
-            float y = totalHeight + iconIndex * (IconSize + IconGap);
+            if (!IsIconVisible(state, blinkTimer)) return;
 
             _api.Render.Render2DTexture(texture.TextureId, x, y, IconSize, IconSize, 50f);
         }

@@ -18,20 +18,22 @@ namespace Unforgettable
         private const float TransitionCompleteLevel = 0.99f;
 
         public static FirepitAlarmSystem? Instance;
-        public HudState HudState { get; } = new();
+        public IReadOnlyDictionary<string, HudState> HudStates => _hudStates;
 
         private readonly ICoreClientAPI _api;
+        private readonly Dictionary<string, HudState> _hudStates = new();
         private readonly Dictionary<string, SlotPhase> _phases = new();
         private readonly Dictionary<string, float> _progress = new();
         private readonly Dictionary<string, float> _prevOreTimes = new();
         private readonly Dictionary<string, float> _prevMaxTimes = new();
         private readonly Dictionary<string, string?> _trackedCooksIntoRecipe = new();
-        private long _repeatingAlarmHandle = -1;
+        private readonly StationAlarmQueue _alarmQueue;
         private int _syncCount;
 
         public FirepitAlarmSystem(ICoreClientAPI api)
         {
             _api = api;
+            _alarmQueue = new StationAlarmQueue(api, AlarmSound, RepeatingAlarmIntervalMs);
         }
 
         public void OnFirepitSynced(BlockEntityFirepit firepit, ITreeAttribute tree)
@@ -42,14 +44,35 @@ namespace Unforgettable
             bool doLog = _syncCount <= 10 || _syncCount % 30 == 0;
 
             string key = PosKey(firepit.Pos);
+            SlotPhase oldPhase = _phases.GetValueOrDefault(key);
 
-            if (!IsCookingPotFamilyInInput(firepit))
+            if (!ShouldTrackPotFirepit(firepit))
             {
                 IgnoreFirepitNotCookingPot(key, doLog);
                 return;
             }
 
-            var cookingPot = firepit.inputSlot?.Itemstack?.Collectible as BlockCookingContainer;
+            float currOreTime = tree.GetFloat("oreCookingTime", 0f);
+            float maxTime = firepit.maxCookingTime();
+
+            if (IsFinishedMealWaiting(firepit))
+            {
+                _phases[key] = SlotPhase.Done;
+                _progress.Remove(key);
+                _trackedCooksIntoRecipe.Remove(key);
+                _prevOreTimes[key] = currOreTime;
+                _prevMaxTimes[key] = maxTime;
+                if (doLog) Log($"  → Done (refeição pronta no fogão {firepit.Pos})");
+                FinishFirepitSync(key, oldPhase);
+                return;
+            }
+
+            if (firepit.inputSlot?.Itemstack?.Collectible is not BlockCookingContainer cookingPot)
+            {
+                FinishFirepitSync(key, oldPhase);
+                return;
+            }
+
             ItemStack[] stacks = GetCookingStacks(firepit);
             CookingRecipe? matchingRecipe = TryGetMatchingRecipe(cookingPot, stacks, out _);
 
@@ -59,10 +82,7 @@ namespace Unforgettable
                 ? matchingRecipe
                 : trackedRecipe;
 
-            float currOreTime = tree.GetFloat("oreCookingTime", 0f);
-            float maxTime = firepit.maxCookingTime();
             bool hasCookingItems = stacks.Length > 0;
-            bool hasInputPot = firepit.inputSlot?.Itemstack != null;
             bool fireLit = firepit.IsBurning;
 
             bool hasCooksIntoOutput = activeCooksIntoRecipe != null
@@ -79,8 +99,7 @@ namespace Unforgettable
                 && prevMaxTime > 0.01f
                 && prevOreTime >= prevMaxTime * CompletionThresholdFraction
                 && currOreTime < 0.01f
-                && prevOreTime > 1f
-                && hasInputPot;
+                && prevOreTime > 1f;
 
             bool cooksIntoFinished = wasTrackingCooksInto
                 && activeCooksIntoRecipe != null
@@ -97,16 +116,17 @@ namespace Unforgettable
             }
 
             bool wasAnyDone = _phases.GetValueOrDefault(key) == SlotPhase.Done;
-            bool shouldBeDone = hasCookingItems
-                && hasCooksIntoOutput
-                && (justCooked || wasAlreadyDone || wasBaking || wasTrackingCooksInto);
+            bool isMealFlow = activeCooksIntoRecipe == null && matchingRecipe?.CooksInto == null;
+            bool shouldBeDoneMeal = hasCookingItems
+                && isMealFlow
+                && (mealFinishedByTimer || wasAlreadyDone);
+            bool shouldBeDoneCooksInto = hasCookingItems
+                && activeCooksIntoRecipe != null
+                && (cooksIntoFinished || wasAlreadyDone
+                    || (hasCooksIntoOutput && (wasBaking || wasTrackingCooksInto)));
+            bool shouldBeDone = shouldBeDoneMeal || shouldBeDoneCooksInto;
 
-            if (!hasInputPot)
-            {
-                ClearFirepitSlot(key);
-                if (doLog && wasAnyDone) Log("  → None (panela removida do fogão)");
-            }
-            else if (!hasCookingItems)
+            if (!hasCookingItems)
             {
                 ClearFirepitSlot(key);
                 if (doLog && wasAnyDone) Log("  → None (conteúdo removido da panela)");
@@ -157,12 +177,7 @@ namespace Unforgettable
 
             _prevOreTimes[key] = currOreTime;
             _prevMaxTimes[key] = maxTime;
-
-            bool isNowDone = _phases.GetValueOrDefault(key) == SlotPhase.Done;
-            if (!wasAnyDone && isNowDone) StartRepeatingAlarm();
-            else if (wasAnyDone && !isNowDone) StopRepeatingAlarmIfNoFirepitDone();
-
-            RefreshHudState();
+            FinishFirepitSync(key, oldPhase);
         }
 
         private static ItemStack[] GetCookingStacks(BlockEntityFirepit firepit)
@@ -243,70 +258,38 @@ namespace Unforgettable
 
         private void IgnoreFirepitNotCookingPot(string key, bool doLog)
         {
-            bool wasDone = _phases.GetValueOrDefault(key) == SlotPhase.Done;
+            SlotPhase oldPhase = _phases.GetValueOrDefault(key);
             bool hadState = _phases.ContainsKey(key) && _phases[key] != SlotPhase.None
                 || _progress.ContainsKey(key);
 
             ClearFirepitSlot(key);
-
-            if (wasDone)
-                StopRepeatingAlarmIfNoFirepitDone();
+            FinishFirepitSync(key, oldPhase);
 
             if (doLog && hadState)
                 Log($"Fogão {key}: ignorado (não é panela de cozinha)");
-
-            RefreshHudState();
         }
 
-        private static bool IsCookingPotFamilyInInput(BlockEntityFirepit firepit)
+        private void FinishFirepitSync(string key, SlotPhase oldPhase)
+        {
+            SlotPhase newPhase = _phases.GetValueOrDefault(key);
+            StationHudSync.NotifyPhaseChange(_alarmQueue, oldPhase, newPhase, key);
+            StationHudSync.Refresh(_hudStates, _phases, _progress);
+        }
+
+        private static bool ShouldTrackPotFirepit(BlockEntityFirepit firepit)
         {
             var input = firepit.inputSlot?.Itemstack?.Collectible;
-            if (input == null) return false;
-            return input is BlockCookingContainer or BlockCookedContainer;
+            var output = firepit.outputSlot?.Itemstack?.Collectible;
+            return input is BlockCookingContainer or BlockCookedContainer
+                || output is BlockCookedContainer;
         }
 
-        private void StopRepeatingAlarmIfNoFirepitDone()
+        private static bool IsFinishedMealWaiting(BlockEntityFirepit firepit)
         {
-            if (!_phases.Values.Any(p => p == SlotPhase.Done))
-                StopRepeatingAlarm();
-        }
+            if (firepit.outputSlot?.Itemstack?.Collectible is BlockCookedContainer)
+                return true;
 
-        private void RefreshHudState()
-        {
-            bool anyBaking = _phases.Values.Any(p => p == SlotPhase.Baking);
-            bool anyDone = _phases.Values.Any(p => p == SlotPhase.Done);
-
-            bool wasActive = HudState.IsActive;
-            HudState.IsActive = anyBaking || anyDone;
-            HudState.IsDone = anyDone;
-            HudState.Progress = anyBaking
-                ? _progress.Values.DefaultIfEmpty(0f).Max()
-                : 0f;
-
-            if (!wasActive && HudState.IsActive) Log("HudState (fogão) ficou ATIVO");
-            else if (wasActive && !HudState.IsActive) Log("HudState (fogão) ficou INATIVO");
-        }
-
-        private void StartRepeatingAlarm()
-        {
-            Log("Alarme de fogão INICIADO");
-            PlayAlarm();
-            _repeatingAlarmHandle = _api.Event.RegisterGameTickListener(_ => PlayAlarm(), RepeatingAlarmIntervalMs);
-        }
-
-        private void StopRepeatingAlarm()
-        {
-            if (_repeatingAlarmHandle < 0) return;
-            Log("Alarme de fogão PARADO");
-            _api.Event.UnregisterGameTickListener(_repeatingAlarmHandle);
-            _repeatingAlarmHandle = -1;
-        }
-
-        private void PlayAlarm()
-        {
-            var entity = _api.World.Player?.Entity;
-            if (entity == null) return;
-            _api.World.PlaySoundAt(new AssetLocation(AlarmSound), entity, null, false, 8f, 1f);
+            return firepit.inputSlot?.Itemstack?.Collectible is BlockCookedContainer;
         }
 
         private void Log(string msg) =>
@@ -317,7 +300,8 @@ namespace Unforgettable
 
         public void Dispose()
         {
-            StopRepeatingAlarm();
+            _alarmQueue.Dispose();
+            _hudStates.Clear();
             _phases.Clear();
             _progress.Clear();
             _prevOreTimes.Clear();

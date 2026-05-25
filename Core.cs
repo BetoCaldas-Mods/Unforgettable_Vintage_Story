@@ -20,6 +20,11 @@ namespace Unforgettable
             _harmony.PatchAll();
         }
 
+        public override void Start(ICoreAPI api)
+        {
+            ModConfig.Load(api);
+        }
+
         public override void StartClientSide(ICoreClientAPI api)
         {
             _alarmSystem = new AlarmSystem(api);

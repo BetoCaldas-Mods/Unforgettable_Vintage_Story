@@ -102,6 +102,7 @@ $RECYCLE.BIN/
 # ── Vintage Story — referências locais (não commitar caminhos de máquina) ──────
 # As DLLs do jogo são referenciadas via variável $(VINTAGE_STORY) no .csproj
 # e não devem ser copiadas para o repositório.
+.refs/
 VintagestoryAPI.dll
 VSSurvivalMod.dll
 0Harmony.dll

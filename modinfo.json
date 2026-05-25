@@ -2,9 +2,9 @@
     "type": "code",
     "modid": "unforgettable",
     "name": "Unforgettable",
-    "version": "1.0.1",
+    "version": "1.0.2",
     "authors": ["Mintir4"],
-    "description": "Shows a HUD icon and plays an alarm when bread or pie is perfectly baked in the clay oven",
+    "description": "Client-side HUD timers and repeating alarms for clay oven baking, firepit cooking pots, and crucible smelting. Supports in-game configuration via ConfigLib and AutoConfigLib.",
     "iconPath": "modicon.png",
     "side": "Client",
     "dependencies": {

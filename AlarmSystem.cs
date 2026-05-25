@@ -23,7 +23,6 @@ namespace Unforgettable
     {
         private const string AlarmSound = "unforgettable:sounds/oventialarm";
         private const int OvenSlotCount = 4;
-        private const int RepeatingAlarmIntervalMs = 5000;
 
         public static AlarmSystem? Instance;
         public IReadOnlyDictionary<string, HudState> HudStates => _hudStates;
@@ -39,7 +38,11 @@ namespace Unforgettable
         public AlarmSystem(ICoreClientAPI api)
         {
             _api = api;
-            _alarmQueue = new StationAlarmQueue(api, AlarmSound, RepeatingAlarmIntervalMs);
+            _alarmQueue = new StationAlarmQueue(
+                api,
+                AlarmSound,
+                () => ModConfig.Current.OvenRepeatAlarm,
+                () => ModConfig.Current.OvenAlarmIntervalSeconds * 1000);
         }
 
         public void OnOvenSynced(BlockEntityOven oven, ITreeAttribute tree)
@@ -58,7 +61,11 @@ namespace Unforgettable
             for (int i = 0; i < OvenSlotCount; i++)
                 UpdateSlot(oven, tree, i, logThisCycle);
 
-            StationHudSync.Refresh(_hudStates, _phases, _progress);
+            StationHudSync.Refresh(
+                _hudStates,
+                _phases,
+                _progress,
+                showHudWhenDone: ModConfig.Current.OvenShowIconWhenDone);
 
             if (logThisCycle)
                 Log($"[Sync #{_syncCount}] forno ativos={_hudStates.Count} done={_phases.Values.Count(p => p == SlotPhase.Done)}");

@@ -12,7 +12,6 @@ namespace Unforgettable
     public class CrucibleAlarmSystem : IDisposable
     {
         private const string AlarmSound = "unforgettable:sounds/crucible_sound";
-        private const int RepeatingAlarmIntervalMs = 5000;
         private const float CompletionThresholdFraction = 0.88f;
 
         public static CrucibleAlarmSystem? Instance;
@@ -30,7 +29,11 @@ namespace Unforgettable
         public CrucibleAlarmSystem(ICoreClientAPI api)
         {
             _api = api;
-            _alarmQueue = new StationAlarmQueue(api, AlarmSound, RepeatingAlarmIntervalMs);
+            _alarmQueue = new StationAlarmQueue(
+                api,
+                AlarmSound,
+                () => ModConfig.Current.CrucibleRepeatAlarm,
+                () => ModConfig.Current.CrucibleAlarmIntervalSeconds * 1000);
         }
 
         public void OnFirepitSynced(BlockEntityFirepit firepit, ITreeAttribute tree)
@@ -158,7 +161,11 @@ namespace Unforgettable
         {
             SlotPhase newPhase = _phases.GetValueOrDefault(key);
             StationHudSync.NotifyPhaseChange(_alarmQueue, oldPhase, newPhase, key);
-            StationHudSync.Refresh(_hudStates, _phases, _progress);
+            StationHudSync.Refresh(
+                _hudStates,
+                _phases,
+                _progress,
+                showHudWhenDone: ModConfig.Current.CrucibleShowIconWhenDone);
         }
 
         private static bool IsSmeltingContainerInInput(BlockEntityFirepit firepit) =>

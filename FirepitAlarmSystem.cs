@@ -13,7 +13,6 @@ namespace Unforgettable
     public class FirepitAlarmSystem : IDisposable
     {
         private const string AlarmSound = "unforgettable:sounds/oventialarm";
-        private const int RepeatingAlarmIntervalMs = 5000;
         private const float CompletionThresholdFraction = 0.88f;
         private const float TransitionCompleteLevel = 0.99f;
 
@@ -33,7 +32,11 @@ namespace Unforgettable
         public FirepitAlarmSystem(ICoreClientAPI api)
         {
             _api = api;
-            _alarmQueue = new StationAlarmQueue(api, AlarmSound, RepeatingAlarmIntervalMs, repeat: false);
+            _alarmQueue = new StationAlarmQueue(
+                api,
+                AlarmSound,
+                () => ModConfig.Current.PotRepeatAlarm,
+                () => ModConfig.Current.PotAlarmIntervalSeconds * 1000);
         }
 
         public void OnFirepitSynced(BlockEntityFirepit firepit, ITreeAttribute tree)
@@ -273,7 +276,11 @@ namespace Unforgettable
         {
             SlotPhase newPhase = _phases.GetValueOrDefault(key);
             StationHudSync.NotifyPhaseChange(_alarmQueue, oldPhase, newPhase, key);
-            StationHudSync.Refresh(_hudStates, _phases, _progress, showHudWhenDone: false);
+            StationHudSync.Refresh(
+                _hudStates,
+                _phases,
+                _progress,
+                showHudWhenDone: ModConfig.Current.PotShowIconWhenDone);
         }
 
         private static bool ShouldTrackPotFirepit(BlockEntityFirepit firepit)

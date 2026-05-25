@@ -8,11 +8,6 @@ namespace Unforgettable
 {
     public class HudRenderer : IRenderer, IDisposable
     {
-        private const float IconSize = 80f;
-        private const float IconMarginLeft = 20f;
-        private const float IconMarginTop = 20f;
-        private const float IconGap = 10f;
-        private const float BandGap = 10f;
         private const float MaxBlinkFrequency = 2f;
 
         public double RenderOrder => 1.0;
@@ -46,32 +41,47 @@ namespace Unforgettable
             EnsureFirepitTextureLoaded();
             EnsureCrucibleTextureLoaded();
 
-            float ovenY = IconMarginTop;
+            float iconSize = ModConfig.Current.HudIconSize;
+            float marginLeft = ModConfig.Current.HudMarginLeft;
+            float marginTop = ModConfig.Current.HudMarginTop;
+            float iconGap = ModConfig.Current.HudIconGap;
+            float bandGap = ModConfig.Current.HudBandGap;
+
+            float ovenY = marginTop;
             RenderBand(
                 deltaTime,
                 AlarmSystem.Instance?.HudStates,
                 _ovenTexture,
                 _ovenBlinkTimers,
                 _ovenWasActive,
-                ovenY);
+                ovenY,
+                marginLeft,
+                iconSize,
+                iconGap);
 
-            float potBandY = ovenY + IconSize + BandGap;
+            float potBandY = ovenY + iconSize + bandGap;
             RenderBand(
                 deltaTime,
                 FirepitAlarmSystem.Instance?.HudStates,
                 _firepitTexture,
                 _firepitBlinkTimers,
                 _firepitWasActive,
-                potBandY);
+                potBandY,
+                marginLeft,
+                iconSize,
+                iconGap);
 
-            float crucibleBandY = potBandY + IconSize + BandGap;
+            float crucibleBandY = potBandY + iconSize + bandGap;
             RenderBand(
                 deltaTime,
                 CrucibleAlarmSystem.Instance?.HudStates,
                 _crucibleTexture,
                 _crucibleBlinkTimers,
                 _crucibleWasActive,
-                crucibleBandY);
+                crucibleBandY,
+                marginLeft,
+                iconSize,
+                iconGap);
         }
 
         private void RenderBand(
@@ -80,7 +90,10 @@ namespace Unforgettable
             LoadedTexture? texture,
             Dictionary<string, float> blinkTimers,
             Dictionary<string, bool> wasActive,
-            float y)
+            float y,
+            float marginLeft,
+            float iconSize,
+            float iconGap)
         {
             if (states == null || states.Count == 0)
             {
@@ -110,8 +123,8 @@ namespace Unforgettable
             {
                 string key = active[i].Key;
                 HudState state = active[i].Value;
-                float x = IconMarginLeft + i * (IconSize + IconGap);
-                RenderStationIcon(deltaTime, state, texture, key, x, y, blinkTimers, wasActive);
+                float x = marginLeft + i * (iconSize + iconGap);
+                RenderStationIcon(deltaTime, state, texture, key, x, y, iconSize, blinkTimers, wasActive);
             }
         }
 
@@ -122,6 +135,7 @@ namespace Unforgettable
             string key,
             float x,
             float y,
+            float iconSize,
             Dictionary<string, float> blinkTimers,
             Dictionary<string, bool> wasActive)
         {
@@ -142,7 +156,7 @@ namespace Unforgettable
 
             if (!IsIconVisible(state, blinkTimer)) return;
 
-            _api.Render.Render2DTexture(texture.TextureId, x, y, IconSize, IconSize, 50f);
+            _api.Render.Render2DTexture(texture.TextureId, x, y, iconSize, iconSize, 50f);
         }
 
         private static bool IsIconVisible(HudState state, float timer)

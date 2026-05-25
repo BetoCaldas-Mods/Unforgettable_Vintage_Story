@@ -9,24 +9,28 @@ namespace Unforgettable
     {
         private readonly ICoreClientAPI _api;
         private readonly AssetLocation _sound;
-        private readonly int _intervalMs;
-        private readonly bool _repeat;
+        private readonly Func<bool> _repeatAlarm;
+        private readonly Func<int> _intervalMs;
         private readonly List<string> _order = new();
         private long _handle = -1;
 
-        public StationAlarmQueue(ICoreClientAPI api, string soundPath, int intervalMs, bool repeat = true)
+        public StationAlarmQueue(
+            ICoreClientAPI api,
+            string soundPath,
+            Func<bool> repeatAlarm,
+            Func<int> intervalMs)
         {
             _api = api;
             _sound = new AssetLocation(soundPath);
+            _repeatAlarm = repeatAlarm;
             _intervalMs = intervalMs;
-            _repeat = repeat;
         }
 
         public void NotifyDone(string key)
         {
             if (_order.Contains(key)) return;
             _order.Add(key);
-            if (_repeat)
+            if (_repeatAlarm())
             {
                 if (_order.Count == 1) StartRepeating();
             }
@@ -45,7 +49,7 @@ namespace Unforgettable
         private void StartRepeating()
         {
             Play();
-            _handle = _api.Event.RegisterGameTickListener(_ => Play(), _intervalMs);
+            _handle = _api.Event.RegisterGameTickListener(_ => Play(), _intervalMs());
         }
 
         private void Stop()

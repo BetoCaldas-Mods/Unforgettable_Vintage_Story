@@ -8,12 +8,14 @@ namespace Unforgettable
         public static void Refresh(
             Dictionary<string, HudState> hudStates,
             Dictionary<string, SlotPhase> phases,
-            Dictionary<string, float> progress)
+            Dictionary<string, float> progress,
+            bool showHudWhenDone = true)
         {
             var activeKeys = new HashSet<string>();
             foreach (var kv in phases)
             {
                 if (kv.Value == SlotPhase.None) continue;
+                if (kv.Value == SlotPhase.Done && !showHudWhenDone) continue;
                 activeKeys.Add(kv.Key);
                 if (!hudStates.TryGetValue(kv.Key, out HudState? hs))
                     hudStates[kv.Key] = hs = new HudState();

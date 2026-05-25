@@ -33,7 +33,7 @@ namespace Unforgettable
         public FirepitAlarmSystem(ICoreClientAPI api)
         {
             _api = api;
-            _alarmQueue = new StationAlarmQueue(api, AlarmSound, RepeatingAlarmIntervalMs);
+            _alarmQueue = new StationAlarmQueue(api, AlarmSound, RepeatingAlarmIntervalMs, repeat: false);
         }
 
         public void OnFirepitSynced(BlockEntityFirepit firepit, ITreeAttribute tree)
@@ -273,7 +273,7 @@ namespace Unforgettable
         {
             SlotPhase newPhase = _phases.GetValueOrDefault(key);
             StationHudSync.NotifyPhaseChange(_alarmQueue, oldPhase, newPhase, key);
-            StationHudSync.Refresh(_hudStates, _phases, _progress);
+            StationHudSync.Refresh(_hudStates, _phases, _progress, showHudWhenDone: false);
         }
 
         private static bool ShouldTrackPotFirepit(BlockEntityFirepit firepit)

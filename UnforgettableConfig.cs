@@ -7,17 +7,19 @@ namespace Unforgettable
     {
         [Category("HUD layout")]
         [DisplayName("Left margin")]
-        [Description("Distance in pixels from the left edge of the screen.")]
-        [DefaultValue(20f)]
-        [Range(0f, 800f)]
-        public float HudMarginLeft { get; set; } = 20f;
+        [Description("Horizontal position as a percentage of the screen. 0% aligns the icon's left edge with the screen's left edge; 100% aligns the icon's right edge with the screen's right edge.")]
+        [DefaultValue(0.02f)]
+        [Range(0f, 1f)]
+        [DisplayFormat(DataFormatString = "P0")]
+        public float HudHorizontalPercent { get; set; } = 0.02f;
 
         [Category("HUD layout")]
         [DisplayName("Top margin")]
-        [Description("Distance in pixels from the top edge of the screen.")]
-        [DefaultValue(20f)]
-        [Range(0f, 800f)]
-        public float HudMarginTop { get; set; } = 20f;
+        [Description("Vertical position as a percentage of the screen. 0% aligns the icon's top edge with the screen's top edge; 100% aligns the icon's bottom edge with the screen's bottom edge.")]
+        [DefaultValue(0.02f)]
+        [Range(0f, 1f)]
+        [DisplayFormat(DataFormatString = "P0")]
+        public float HudVerticalPercent { get; set; } = 0.02f;
 
         [Category("HUD layout")]
         [DisplayName("Icon size")]

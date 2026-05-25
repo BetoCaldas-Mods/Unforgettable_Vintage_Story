@@ -23,6 +23,7 @@ namespace Unforgettable
         public override void Start(ICoreAPI api)
         {
             ModConfig.Load(api);
+            ConfigLibBridge.TryIntegrate(api);
         }
 
         public override void StartClientSide(ICoreClientAPI api)

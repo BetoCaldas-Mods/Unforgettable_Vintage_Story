@@ -24,6 +24,14 @@
       <HintPath>$(VINTAGE_STORY)/Lib/0Harmony.dll</HintPath>
       <Private>false</Private>
     </Reference>
+    <Reference Include="configlib">
+      <HintPath>$(MSBuildThisFileDirectory).refs\configlib.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="ImGui.NET">
+      <HintPath>$(MSBuildThisFileDirectory).refs\vsimgui\ImGui.NET.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
   </ItemGroup>
 
   <ItemGroup>

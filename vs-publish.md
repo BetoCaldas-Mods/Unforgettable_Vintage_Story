@@ -60,6 +60,25 @@ Campo **Text** = HTML via TinyMCE (**Tools → Source code**). Não usar Markdow
 <ul>
 <li><strong>Vintage Story 1.22.2+</strong></li>
 <li><strong>Client only</strong> — no server-side component needed</li>
+<li>Optional: <strong>ConfigLib</strong>, <strong>AutoConfigLib</strong>, and <strong>ImGui</strong> for in-game settings with live HUD preview</li>
+</ul>
+
+<h3>Default settings</h3>
+<ul>
+<li><strong>Left margin:</strong> 2%</li>
+<li><strong>Top margin:</strong> 2%</li>
+<li><strong>Icon size:</strong> 80 px</li>
+<li><strong>Gap between icons:</strong> 10 px</li>
+<li><strong>Gap between stations:</strong> 10 px</li>
+<li><strong>Clay oven — repeat alarm:</strong> On</li>
+<li><strong>Clay oven — show icon when done:</strong> On</li>
+<li><strong>Clay oven — alarm interval:</strong> 5 s</li>
+<li><strong>Cooking pot — repeat alarm:</strong> Off</li>
+<li><strong>Cooking pot — show icon when done:</strong> Off</li>
+<li><strong>Cooking pot — alarm interval:</strong> 5 s</li>
+<li><strong>Crucible — repeat alarm:</strong> On</li>
+<li><strong>Crucible — show icon when done:</strong> On</li>
+<li><strong>Crucible — alarm interval:</strong> 5 s</li>
 </ul>
 
 <h3>Credits</h3>
@@ -119,7 +138,7 @@ Initial release — clay oven, firepit cooking pot, and crucible HUD timers with
 ### modinfo.json
 
 ```json
-"description": "Client-side HUD timers and repeating alarms for clay oven baking, firepit cooking pots, and crucible smelting",
+"description": "Client-side HUD timers and alarms for clay oven, cooking pot, and crucible. Optional in-game settings via ConfigLib, AutoConfigLib, and ImGui.\n\nDefault settings:\n\nSetting | Default\nLeft margin | 2%\nTop margin | 2%\nIcon size | 80 px\nGap between icons | 10 px\nGap between stations | 10 px\nClay oven — repeat alarm | On\nClay oven — show icon when done | On\nClay oven — alarm interval | 5 s\nCooking pot — repeat alarm | Off\nCooking pot — show icon when done | Off\nCooking pot — alarm interval | 5 s\nCrucible — repeat alarm | On\nCrucible — show icon when done | On\nCrucible — alarm interval | 5 s",
 "website": "https://mods.vintagestory.at/show/mod/50588",
 "iconPath": "modicon.png"
 ```

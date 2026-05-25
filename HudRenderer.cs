@@ -42,12 +42,21 @@ namespace Unforgettable
             EnsureCrucibleTextureLoaded();
 
             float iconSize = ModConfig.Current.HudIconSize;
-            float marginLeft = ModConfig.Current.HudMarginLeft;
-            float marginTop = ModConfig.Current.HudMarginTop;
             float iconGap = ModConfig.Current.HudIconGap;
             float bandGap = ModConfig.Current.HudBandGap;
+            (float screenWidth, float screenHeight) = HudLayout.GetViewportSize(_api);
+            float blockHeight = HudLayout.CalculateBlockHeight(iconSize, bandGap);
+            int maxBandIconCount = GetMaxBandIconCount(
+                AlarmSystem.Instance?.HudStates,
+                FirepitAlarmSystem.Instance?.HudStates,
+                CrucibleAlarmSystem.Instance?.HudStates);
+            float layoutWidth = maxBandIconCount > 0
+                ? HudLayout.CalculateBandWidth(iconSize, iconGap, maxBandIconCount)
+                : iconSize;
+            float baseX = HudLayout.ResolveX(ModConfig.Current.HudHorizontalPercent, screenWidth, layoutWidth);
+            float blockTopY = HudLayout.ResolveBlockTopY(ModConfig.Current.HudVerticalPercent, screenHeight, blockHeight);
+            float ovenY = blockTopY;
 
-            float ovenY = marginTop;
             RenderBand(
                 deltaTime,
                 AlarmSystem.Instance?.HudStates,
@@ -55,7 +64,7 @@ namespace Unforgettable
                 _ovenBlinkTimers,
                 _ovenWasActive,
                 ovenY,
-                marginLeft,
+                baseX,
                 iconSize,
                 iconGap);
 
@@ -67,7 +76,7 @@ namespace Unforgettable
                 _firepitBlinkTimers,
                 _firepitWasActive,
                 potBandY,
-                marginLeft,
+                baseX,
                 iconSize,
                 iconGap);
 
@@ -79,7 +88,7 @@ namespace Unforgettable
                 _crucibleBlinkTimers,
                 _crucibleWasActive,
                 crucibleBandY,
-                marginLeft,
+                baseX,
                 iconSize,
                 iconGap);
         }
@@ -157,6 +166,27 @@ namespace Unforgettable
             if (!IsIconVisible(state, blinkTimer)) return;
 
             _api.Render.Render2DTexture(texture.TextureId, x, y, iconSize, iconSize, 50f);
+        }
+
+        private static int GetMaxBandIconCount(
+            IReadOnlyDictionary<string, HudState>? ovenStates,
+            IReadOnlyDictionary<string, HudState>? potStates,
+            IReadOnlyDictionary<string, HudState>? crucibleStates) =>
+            Math.Max(
+                CountActiveIcons(ovenStates),
+                Math.Max(CountActiveIcons(potStates), CountActiveIcons(crucibleStates)));
+
+        private static int CountActiveIcons(IReadOnlyDictionary<string, HudState>? states)
+        {
+            if (states == null) return 0;
+
+            int count = 0;
+            foreach (KeyValuePair<string, HudState> entry in states)
+            {
+                if (entry.Value.IsActive) count++;
+            }
+
+            return count;
         }
 
         private static bool IsIconVisible(HudState state, float timer)

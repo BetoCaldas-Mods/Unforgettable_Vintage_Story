@@ -4,7 +4,7 @@
     "name": "Unforgettable",
     "version": "1.0.2",
     "authors": ["Mintir4"],
-    "description": "Client-side HUD timers and repeating alarms for clay oven baking, firepit cooking pots, and crucible smelting. Supports in-game configuration via ConfigLib and AutoConfigLib.",
+    "description": "Client-side HUD timers and alarms for clay oven, cooking pot, and crucible. Optional in-game settings via ConfigLib, AutoConfigLib, and ImGui.\n\nDefault settings:\n\nSetting | Default\nLeft margin | 2%\nTop margin | 2%\nIcon size | 80 px\nGap between icons | 10 px\nGap between stations | 10 px\nClay oven — repeat alarm | On\nClay oven — show icon when done | On\nClay oven — alarm interval | 5 s\nCooking pot — repeat alarm | Off\nCooking pot — show icon when done | Off\nCooking pot — alarm interval | 5 s\nCrucible — repeat alarm | On\nCrucible — show icon when done | On\nCrucible — alarm interval | 5 s",
     "iconPath": "modicon.png",
     "side": "Client",
     "dependencies": {

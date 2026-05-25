@@ -5,7 +5,7 @@ namespace Unforgettable
 {
     internal static class ModConfig
     {
-        private const string ConfigFileName = "unforgettable.json";
+        public const string FileName = "unforgettable.json";
 
         public static UnforgettableConfig Current { get; private set; } = new();
 
@@ -13,9 +13,9 @@ namespace Unforgettable
         {
             try
             {
-                var loaded = api.LoadModConfig<UnforgettableConfig>(ConfigFileName);
+                var loaded = api.LoadModConfig<UnforgettableConfig>(FileName);
                 Current = loaded ?? new UnforgettableConfig();
-                api.StoreModConfig(Current, ConfigFileName);
+                api.StoreModConfig(Current, FileName);
             }
             catch (Exception ex)
             {
@@ -23,5 +23,11 @@ namespace Unforgettable
                 Current = new UnforgettableConfig();
             }
         }
+
+        public static void Save(ICoreAPI api) =>
+            api.StoreModConfig(Current, FileName);
+
+        public static void SyncFromConfigLib(ICoreAPI api) =>
+            Save(api);
     }
 }
